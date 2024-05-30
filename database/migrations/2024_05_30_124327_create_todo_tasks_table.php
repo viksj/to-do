@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('todo_tasks', function (Blueprint $table) {
             $table->id();
+            $table->string('task_name');
+            $table->text('task_description');
+            $table->boolean('status')->default(false);
             $table->timestamps();
         });
     }

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { InputField, TextArea } from "./components/formFieldComponents/Input";
 import Swal from "sweetalert2";
 import axios from "axios";
@@ -6,16 +6,37 @@ import axios from "axios";
 export default function Index() {
     const [taskName, setTaskName] = useState('');
     const [taskDiscription, setTaskDiscription] = useState('');
+    const [tasks, setTasks] = useState([]);
     const [error, setError] = useState({});
-    const handleChangeTaskName = useCallback((e) => {
-        setTaskName(e.target.value)
-        setError(prevError => ({ ...prevError, taskName: '' }))
 
+    const handleChangeTaskName = useCallback((e) => {
+        setTaskName(e.target.value);
+        setError(prevError => ({ ...prevError, taskName: '' }));
     }, []);
+
     const handleChangeTaskDiscription = useCallback((e) => {
-        setTaskDiscription(e.target.value)
-        setError(prevError => ({ ...prevError, taskDiscription: '' }))
+        setTaskDiscription(e.target.value);
+        setError(prevError => ({ ...prevError, taskDiscription: '' }));
     }, []);
+
+    const fetchTasks = useCallback(() => {
+        axios.get('/api/gettask/')
+            .then(response => {
+                if (response?.data?.todoTask) {
+                    setTasks(response.data.todoTask);
+                }
+            })
+            .catch(error => {
+                if (error.response) {
+                    const errorsObj = error.response.data;
+                    alert(errorsObj.message);
+                }
+            });
+    }, []);
+
+    useEffect(() => {
+        fetchTasks();
+    }, [fetchTasks]);
 
     const handleAddTask = async () => {
         if (!taskName && !taskDiscription) {
@@ -31,39 +52,47 @@ export default function Index() {
             return;
         }
 
-        axios.post('/api/addtask/' + urlParams.giveawayId, {taskName:taskName, taskDiscription: taskDiscription})
-            .then(function (response) {
-                
+        axios.post('/api/addtask/', { taskName, taskDiscription })
+            .then(response => {
+                if (response?.data?.status === 200) {
+                    Swal.fire({
+                        toast: true,
+                        position: "top-end",
+                        icon: "success",
+                        title: response.data.message,
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                    // Fetch updated tasks
+                    fetchTasks();
+                    // Clear form fields
+                    setTaskName('');
+                    setTaskDiscription('');
+                }
             })
-            .catch(function (error) {
-                if (typeof error.request.response !== 'undefined') {
-                    let errorsObj = JSON.parse(error.request.response);
-                    // setErrors(JSON.parse(error.request.response));
+            .catch(error => {
+                if (error.response) {
+                    const errorsObj = error.response.data;
                     alert(errorsObj.message);
                 }
             });
+    };
 
-    }
-
-    const handleDoneTask = () => {
-        const Toast = Swal.mixin({
+    const handleDoneTask = (id) => {
+        // Implementation for marking task as done
+        Swal.fire({
             toast: true,
             position: "top-end",
+            icon: "success",
+            title: "Task marked as done",
             showConfirmButton: false,
             timer: 3000,
-            timerProgressBar: true,
-            didOpen: (toast) => {
-                toast.onmouseenter = Swal.stopTimer;
-                toast.onmouseleave = Swal.resumeTimer;
-            }
+            timerProgressBar: true
         });
-        Toast.fire({
-            icon: "success",
-            title: "Signed in successfully"
-        });
-    }
+    };
 
-    const handleDeleteTask = () => {
+    const handleDeleteTask = (id) => {
         Swal.fire({
             title: "Are you sure?",
             icon: "warning",
@@ -73,16 +102,27 @@ export default function Index() {
             confirmButtonText: "Yes, delete it!"
         }).then((result) => {
             if (result.isConfirmed) {
-                Swal.fire({
-                    title: "Deleted!",
-                    text: "Your file has been deleted.",
-                    icon: "success"
-                });
+                axios.delete(`/api/deletetask/${id}`)
+                    .then(response => {
+                        if (response?.data?.status === 200) {
+                            Swal.fire({
+                                title: "Deleted!",
+                                text: "Your task has been deleted.",
+                                icon: "success"
+                            });
+                            // Update tasks state by filtering out the deleted task
+                            setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
+                        }
+                    })
+                    .catch(error => {
+                        if (error.response) {
+                            const errorsObj = error.response.data;
+                            alert(errorsObj.message);
+                        }
+                    });
             }
         });
-
-
-    }
+    };
 
     return (
         <div className="container">
@@ -100,26 +140,32 @@ export default function Index() {
                     </div>
                 </div>
                 <div className="col-md-6 mt-3">
-                    <div className="card">
-                        <div className="card-body">
-                            <div className="card">
-                                <div className="card-body">
-                                    <div className="row">
-                                        <div className="col-8">
-                                            <h6 className="card-title">Task Name</h6>
-                                            <p className="card-text">
-                                                sdasdas
-                                            </p>
+                    {tasks.length > 0 && (
+                        <div className="card">
+                            <div className="card-body">
+                                {tasks.map((task, index) => (
+                                    <React.Fragment key={index}>
+                                        <div className="card mt-2">
+                                            <div className="card-body">
+                                                <div className="row">
+                                                    <div className="col-8">
+                                                        <h6 className="card-title">{task.task_name}</h6>
+                                                        <p className="card-text">
+                                                            {task.task_description}
+                                                        </p>
+                                                    </div>
+                                                    <div className="col-4 d-flex ">
+                                                        <button className="btn btn-sm" onClick={() => { handleDoneTask(task.id) }}><i className="fa-solid fa-check"></i></button>
+                                                        <button className="btn btn-sm" onClick={() => { handleDeleteTask(task.id) }}><i className="fa-regular fa-trash-can"></i></button>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="col-4 d-flex ">
-                                            <button className="btn btn-sm" onClick={handleDoneTask}><i className="fa-solid fa-check"></i></button>
-                                            <button className="btn btn-sm" onClick={handleDeleteTask}><i className="fa-regular fa-trash-can"></i></button>
-                                        </div>
-                                    </div>
-                                </div>
+                                    </React.Fragment>
+                                ))}
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>
