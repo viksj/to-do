@@ -67,16 +67,61 @@ class TodoController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, TodoTask $todoTask)
+    public function update($id)
     {
-        //
+        try {
+            
+            $task = TodoTask::findOrFail($id);
+    
+            $task->status = true;
+    
+            $task->save();
+    
+            return response()->json([
+                'status' => 200,
+                'message' => 'Task status updated successfully.',
+                'task' => $task,
+            ], 200);
+    
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'Task not found.',
+            ], 404);
+    
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'An error occurred while updating the task.',
+            ], 500);
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(TodoTask $todoTask)
+    public function destroy($id)
     {
+        try {
+            //code...
+            $todoTask = TodoTask::findOrfail($id);
+            $todoTask->delete();
+            return response()->json([
+                'status' => 200,
+                'message' => 'To-Do Task delete successfully.',
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'Task not found.',
+            ], 404);
+    
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'An error occurred while updating the task.',
+            ], 500);
+        }
         //
     }
 }

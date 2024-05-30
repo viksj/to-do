@@ -10,3 +10,5 @@ Route::get('/user', function (Request $request) {
 
 Route::get('/gettask', [TodoController::class, 'index']);
 Route::post('/addtask', [TodoController::class, 'store']);
+Route::put('/updatetask/{id}', [TodoController::class, 'update']);
+Route::delete('/deletetask/{id}', [TodoController::class, 'destroy']);

@@ -80,16 +80,43 @@ export default function Index() {
     };
 
     const handleDoneTask = (id) => {
-        // Implementation for marking task as done
-        Swal.fire({
-            toast: true,
-            position: "top-end",
-            icon: "success",
-            title: "Task marked as done",
-            showConfirmButton: false,
-            timer: 3000,
-            timerProgressBar: true
-        });
+        axios.put(`/api/updatetask/${id}`)
+            .then(function (response) {
+                if (response?.data?.status === 200) {
+                    Swal.fire({
+                        toast: true,
+                        position: "top-end",
+                        icon: "success",
+                        title: response?.data?.message,
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                    setTasks(prevTasks => {
+                        return prevTasks.map(task => {
+                            if (task.id === id) {
+                                return { ...task, status: true }; 
+                            }
+                            return task;
+                        });
+                    });
+    
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: response?.data?.message,
+                    })
+                }
+
+            })
+            .catch(function (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: 'Something went wrong! Unable to mark the task as done.',
+                })
+            })
     };
 
     const handleDeleteTask = (id) => {
@@ -107,7 +134,7 @@ export default function Index() {
                         if (response?.data?.status === 200) {
                             Swal.fire({
                                 title: "Deleted!",
-                                text: "Your task has been deleted.",
+                                text: response?.data?.message,
                                 icon: "success"
                             });
                             // Update tasks state by filtering out the deleted task
@@ -155,7 +182,11 @@ export default function Index() {
                                                         </p>
                                                     </div>
                                                     <div className="col-4 d-flex ">
-                                                        <button className="btn btn-sm" onClick={() => { handleDoneTask(task.id) }}><i className="fa-solid fa-check"></i></button>
+                                                        {!task.status && (
+                                                            <button className="btn btn-sm me-2" onClick={() => handleDoneTask(task.id)}>
+                                                                <i className="fa-solid fa-check"></i>
+                                                            </button>
+                                                        )}
                                                         <button className="btn btn-sm" onClick={() => { handleDeleteTask(task.id) }}><i className="fa-regular fa-trash-can"></i></button>
                                                     </div>
                                                 </div>
