@@ -161,7 +161,7 @@ export default function Index() {
                         </div>
                         <div className="card-body">
                             <InputField label="Task Name" type="text" value={taskName} onChange={handleChangeTaskName} error={error?.taskName} />
-                            <TextArea label="Task Discrition" value={taskDiscription} onChange={handleChangeTaskDiscription} error={error?.taskDiscription} />
+                            <TextArea label="Task Discription" value={taskDiscription} onChange={handleChangeTaskDiscription} error={error?.taskDiscription} />
                             <button type="button" className="btn btn-sm btn-primary float-end" onClick={handleAddTask}>Add Task</button>
                         </div>
                     </div>
@@ -176,7 +176,7 @@ export default function Index() {
                                             <div className="card-body">
                                                 <div className="row">
                                                     <div className="col-8">
-                                                        <h6 className="card-title">{task.task_name}</h6>
+                                                        <h6 className="card-title" style={{textTransform: 'capitalize'}}>{task.task_name}</h6>
                                                         <p className="card-text">
                                                             {task.task_description}
                                                         </p>
