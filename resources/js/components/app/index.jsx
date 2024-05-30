@@ -1,16 +1,23 @@
 import React, { useCallback, useState } from "react";
 import { InputField, TextArea } from "./components/formFieldComponents/Input";
 import Swal from "sweetalert2";
+import axios from "axios";
 
 export default function Index() {
     const [taskName, setTaskName] = useState('');
     const [taskDiscription, setTaskDiscription] = useState('');
     const [error, setError] = useState({});
-    const handleChangeTaskName = useCallback((e) => setTaskName(e.target.value), []);
-    const handleChangeTaskDiscription = useCallback((e) => setTaskDiscription(e.target.value), []);
+    const handleChangeTaskName = useCallback((e) => {
+        setTaskName(e.target.value)
+        setError(prevError => ({ ...prevError, taskName: '' }))
 
-    const handleAddTask = () => {
-        setError({})
+    }, []);
+    const handleChangeTaskDiscription = useCallback((e) => {
+        setTaskDiscription(e.target.value)
+        setError(prevError => ({ ...prevError, taskDiscription: '' }))
+    }, []);
+
+    const handleAddTask = async () => {
         if (!taskName && !taskDiscription) {
             setError({ taskName: "This Task Name Field is required.", taskDiscription: 'This Discription Field is required.' });
             return;
@@ -24,6 +31,18 @@ export default function Index() {
             return;
         }
 
+        axios.post('/api/addtask/' + urlParams.giveawayId, {taskName:taskName, taskDiscription: taskDiscription})
+            .then(function (response) {
+                
+            })
+            .catch(function (error) {
+                if (typeof error.request.response !== 'undefined') {
+                    let errorsObj = JSON.parse(error.request.response);
+                    // setErrors(JSON.parse(error.request.response));
+                    alert(errorsObj.message);
+                }
+            });
+
     }
 
     const handleDoneTask = () => {
@@ -34,14 +53,14 @@ export default function Index() {
             timer: 3000,
             timerProgressBar: true,
             didOpen: (toast) => {
-              toast.onmouseenter = Swal.stopTimer;
-              toast.onmouseleave = Swal.resumeTimer;
+                toast.onmouseenter = Swal.stopTimer;
+                toast.onmouseleave = Swal.resumeTimer;
             }
-          });
-          Toast.fire({
+        });
+        Toast.fire({
             icon: "success",
             title: "Signed in successfully"
-          });
+        });
     }
 
     const handleDeleteTask = () => {
@@ -52,17 +71,17 @@ export default function Index() {
             confirmButtonColor: "#3085d6",
             cancelButtonColor: "#d33",
             confirmButtonText: "Yes, delete it!"
-          }).then((result) => {
+        }).then((result) => {
             if (result.isConfirmed) {
-              Swal.fire({
-                title: "Deleted!",
-                text: "Your file has been deleted.",
-                icon: "success"
-              });
+                Swal.fire({
+                    title: "Deleted!",
+                    text: "Your file has been deleted.",
+                    icon: "success"
+                });
             }
-          });
-          
-          
+        });
+
+
     }
 
     return (
@@ -71,12 +90,12 @@ export default function Index() {
                 <div className="col-md-6">
                     <div className="card mt-3">
                         <div className="card-header">
-                            <h5 class="card-title">TO Do Task</h5>
+                            <h5 className="card-title">TO Do Task</h5>
                         </div>
                         <div className="card-body">
                             <InputField label="Task Name" type="text" value={taskName} onChange={handleChangeTaskName} error={error?.taskName} />
                             <TextArea label="Task Discrition" value={taskDiscription} onChange={handleChangeTaskDiscription} error={error?.taskDiscription} />
-                            <button type="button" class="btn btn-sm btn-primary float-end" onClick={handleAddTask}>Add Task</button>
+                            <button type="button" className="btn btn-sm btn-primary float-end" onClick={handleAddTask}>Add Task</button>
                         </div>
                     </div>
                 </div>
