@@ -2,12 +2,16 @@ import React, { useCallback, useEffect, useState } from "react";
 import { InputField, TextArea } from "./components/formFieldComponents/Input";
 import Swal from "sweetalert2";
 import axios from "axios";
+import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
+import TaskModal from "./components/TaskModel";
 
 export default function Index() {
     const [taskName, setTaskName] = useState('');
     const [taskDiscription, setTaskDiscription] = useState('');
     const [tasks, setTasks] = useState([]);
     const [error, setError] = useState({});
+    const [showModal, setShowModal] = useState(false);
+    const [selectedTask, setSelectedTask] = useState(null);
 
     const handleChangeTaskName = useCallback((e) => {
         setTaskName(e.target.value);
@@ -64,9 +68,7 @@ export default function Index() {
                         timer: 3000,
                         timerProgressBar: true
                     });
-                    // Fetch updated tasks
                     fetchTasks();
-                    // Clear form fields
                     setTaskName('');
                     setTaskDiscription('');
                 }
@@ -81,7 +83,7 @@ export default function Index() {
 
     const handleDoneTask = (id) => {
         axios.put(`/api/updatetask/${id}`)
-            .then(function (response) {
+            .then(response => {
                 if (response?.data?.status === 200) {
                     Swal.fire({
                         toast: true,
@@ -95,28 +97,28 @@ export default function Index() {
                     setTasks(prevTasks => {
                         return prevTasks.map(task => {
                             if (task.id === id) {
-                                return { ...task, status: true }; 
+                                return { ...task, status: true };
                             }
                             return task;
                         });
                     });
-    
+
                 } else {
                     Swal.fire({
                         icon: 'error',
                         title: 'Oops...',
                         text: response?.data?.message,
-                    })
+                    });
                 }
 
             })
-            .catch(function (error) {
+            .catch(() => {
                 Swal.fire({
                     icon: 'error',
                     title: 'Oops...',
                     text: 'Something went wrong! Unable to mark the task as done.',
-                })
-            })
+                });
+            });
     };
 
     const handleDeleteTask = (id) => {
@@ -137,7 +139,6 @@ export default function Index() {
                                 text: response?.data?.message,
                                 icon: "success"
                             });
-                            // Update tasks state by filtering out the deleted task
                             setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
                         }
                     })
@@ -149,6 +150,53 @@ export default function Index() {
                     });
             }
         });
+    };
+
+    const onDragEnd = (result) => {
+        if (!result.destination) return;
+
+        const { source, destination } = result;
+        if (source.droppableId !== destination.droppableId) {
+            const taskId = result.draggableId;
+            const newStatus = destination.droppableId;
+
+            axios.put(`/api/updatetask/${taskId}`, { status: newStatus })
+                .then(response => {
+                    if (response?.data?.status === 200) {
+                        Swal.fire({
+                            toast: true,
+                            position: "top-end",
+                            icon: "success",
+                            title: response?.data?.message,
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
+                        fetchTasks();
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: 'Something went wrong! Unable to update the task status.',
+                    });
+                });
+        }
+    };
+
+    const getTasksByStatus = (status) => {
+        return tasks.filter(task => task.status === status);
+    };
+
+    const handleTaskClick = (task) => {
+        setSelectedTask(task);
+        setShowModal(true);
+    };
+
+    const handleCloseModal = () => {
+        setShowModal(false);
+        setSelectedTask(null);
     };
 
     return (
@@ -166,39 +214,52 @@ export default function Index() {
                         </div>
                     </div>
                 </div>
-                <div className="col-md-6 mt-3">
-                    {tasks.length > 0 && (
-                        <div className="card">
-                            <div className="card-body">
-                                {tasks.map((task, index) => (
-                                    <React.Fragment key={index}>
-                                        <div className="card mt-2">
-                                            <div className="card-body">
-                                                <div className="row">
-                                                    <div className="col-8">
-                                                        <h6 className="card-title" style={{textTransform: 'capitalize'}}>{task.task_name}</h6>
-                                                        <p className="card-text">
-                                                            {task.task_description}
-                                                        </p>
-                                                    </div>
-                                                    <div className="col-4 d-flex ">
-                                                        {!task.status && (
-                                                            <button className="btn btn-sm me-2" onClick={() => handleDoneTask(task.id)}>
-                                                                <i className="fa-solid fa-check"></i>
-                                                            </button>
-                                                        )}
-                                                        <button className="btn btn-sm" onClick={() => { handleDeleteTask(task.id) }}><i className="fa-regular fa-trash-can"></i></button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </React.Fragment>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
             </div>
+            <DragDropContext onDragEnd={onDragEnd}>
+                <div className="row justify-content-between">
+                    {["To Do", "Selected For Development", "In Process", "Done"].map((status, index) => (
+                        <div className="col-md-3 mt-3" key={index}>
+                            <h6>{status}</h6>
+                            <Droppable droppableId={status}>
+                                {(provided) => (
+                                    <div ref={provided.innerRef} {...provided.droppableProps} className="card">
+                                        <div className="card-body">
+                                            {getTasksByStatus(status).map((task, index) => (
+                                                <Draggable key={task.id} draggableId={task.id.toString()} index={index}>
+                                                    {(provided) => (
+                                                        <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className="card mt-2" onClick={() => handleTaskClick(task)}>
+                                                            <div className="card-body">
+                                                                <div className="row">
+                                                                    <div className="col-8">
+                                                                        <h6 className="card-title" style={{ textTransform: 'capitalize' }}>{task.task_name}</h6>
+                                                                        <p className="card-text">
+                                                                            {task.task_description}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div className="col-4 d-flex">
+                                                                        {!task.status && (
+                                                                            <button className="btn btn-sm me-2" onClick={() => handleDoneTask(task.id)}>
+                                                                                <i className="fa-solid fa-check"></i>
+                                                                            </button>
+                                                                        )}
+                                                                        <button className="btn btn-sm" onClick={() => { handleDeleteTask(task.id) }}><i className="fa-regular fa-trash-can"></i></button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </Draggable>
+                                            ))}
+                                            {provided.placeholder}
+                                        </div>
+                                    </div>
+                                )}
+                            </Droppable>
+                        </div>
+                    ))}
+                </div>
+            </DragDropContext>
+            {showModal && <TaskModal selectedTask={selectedTask} onClose={handleCloseModal} />}
         </div>
     );
 }

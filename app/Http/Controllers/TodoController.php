@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\TodoTask;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class TodoController extends Controller
 {
@@ -67,13 +68,17 @@ class TodoController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update($id)
+    public function update(Request $request, $id)
     {
         try {
-            
+            $request->validate([
+                'status' => 'required|string|in:To Do,Selected For Development,In Process,Done',
+            ]);
+
             $task = TodoTask::findOrFail($id);
     
-            $task->status = true;
+            $task->status = $request->status;
+            $task->updated_at = Carbon::now();
     
             $task->save();
     

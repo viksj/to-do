@@ -73,6 +73,9 @@ export const TextArea = ({
     placeholder = "",
     value = "",
     error = "",
+    disabled=false,
+    style={},
+    rows="",
     onChange = () => { }
 }) => {
     return (
@@ -85,7 +88,10 @@ export const TextArea = ({
                 id={id}
                 placeholder={placeholder}
                 value={value}
+                disabled={disabled}
+                style={style}
                 onChange={onChange}
+                rows={rows}
             />
             {error && (
                 <div className="invalid-feedback">

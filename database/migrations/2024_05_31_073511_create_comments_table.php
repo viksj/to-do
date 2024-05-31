@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('todo_tasks', function (Blueprint $table) {
+        Schema::create('comments', function (Blueprint $table) {
             $table->id();
-            $table->string('task_name');
-            $table->text('task_description');
-            $table->string('status')->default('To Do');
+            $table->unsignedBigInteger('task_id');
+            $table->text('task_comments');
             $table->timestamps();
+            $table->foreign('task_id')->references('id')->on('todo_tasks')->onDelete('cascade');
         });
     }
 
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('todo_tasks');
+        Schema::dropIfExists('comments');
     }
 };

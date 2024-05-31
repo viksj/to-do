@@ -16,4 +16,8 @@ class TodoTask extends Model
         'task_description',
         'status',
     ];
+
+    public function comments () {
+        return $this->belongsTo(Comment::class, 'id', 'task_id');
+    }
 }
